@@ -246,161 +246,62 @@ if st.button(
     # -------------------------------------------------
 
     try:
+        # Check the features expected by the trained model
+
+st.write("### 🔍 Model Feature Check")
+
+try:
+    expected_features = list(model.feature_names_in_)
+
+    st.write("**Model expects these features:**")
+    st.write(expected_features)
+
+    st.write("**App is sending these features:**")
+    st.write(list(input_data.columns))
+
+    missing_features = [
+        col for col in expected_features
+        if col not in input_data.columns
+    ]
+
+    extra_features = [
+        col for col in input_data.columns
+        if col not in expected_features
+    ]
+
+    if missing_features:
+        st.error(
+            f"Missing features: {missing_features}"
+        )
+
+    if extra_features:
+        st.warning(
+            f"Extra features: {extra_features}"
+        )
+
+    if not missing_features and not extra_features:
+
+        # Put columns in exactly the same order
+        input_data = input_data[
+            expected_features
+        ]
 
         prediction = model.predict(
             input_data
         )[0]
 
-
-        # Probability
-
-        try:
-
-            probabilities = model.predict_proba(
-                input_data
-            )[0]
-
-            rejection_probability = (
-                probabilities[0] * 100
-            )
-
-            approval_probability = (
-                probabilities[1] * 100
-            )
-
-        except:
-
-            approval_probability = None
-            rejection_probability = None
-
-
-        st.divider()
-
-        st.markdown("### 📊 Prediction Result")
-
-
-        # -------------------------------------------------
-        # APPROVED
-        # -------------------------------------------------
-
-        if prediction == 1:
-
-            st.success(
-                "## ✅ Loan Approved"
-            )
-
-            if approval_probability is not None:
-
-                st.metric(
-                    "Approval Probability",
-                    f"{approval_probability:.2f}%"
-                )
-
-
-        # -------------------------------------------------
-        # NOT APPROVED
-        # -------------------------------------------------
-
-        else:
-
-            st.error(
-                "## ❌ Loan Not Approved"
-            )
-
-            if rejection_probability is not None:
-
-                st.metric(
-                    "Rejection Probability",
-                    f"{rejection_probability:.2f}%"
-                )
-
-
-        # -------------------------------------------------
-        # PROBABILITY BAR
-        # -------------------------------------------------
-
-        if approval_probability is not None:
-
-            st.markdown("#### Prediction Confidence")
-
-            probability_df = pd.DataFrame(
-                {
-                    "Probability (%)": [
-                        approval_probability,
-                        rejection_probability
-                    ]
-                },
-                index=[
-                    "Approved",
-                    "Not Approved"
-                ]
-            )
-
-            st.bar_chart(
-                probability_df
-            )
-
-
-        # -------------------------------------------------
-        # SHOW IMPORTANT INPUTS
-        # -------------------------------------------------
-
-        st.markdown("#### 📝 Application Summary")
-
-        summary = pd.DataFrame(
-            {
-                "Feature": [
-                    "Age",
-                    "Annual Income",
-                    "Credit Score",
-                    "Loan Amount",
-                    "Interest Rate",
-                    "Previous Default"
-                ],
-
-                "Value": [
-                    age,
-                    f"₹ {income:,.0f}",
-                    credit_score,
-                    f"₹ {loan_amount:,.0f}",
-                    f"{interest_rate:.2f}%",
-                    previous_default
-                ]
-            }
+        st.success(
+            f"Prediction completed: {prediction}"
         )
 
-        st.dataframe(
-            summary,
-            use_container_width=True,
-            hide_index=True
-        )
-
-
-    except Exception as e:
-
+    else:
         st.error(
-            "❌ Prediction could not be completed."
+            "Feature names do not match the trained model."
         )
 
-        st.write(
-            "Model and input features are not matching."
-        )
+except Exception as e:
 
-        st.write(e)
+    st.error("Could not check model features.")
+    st.write(e)
 
-
-# =====================================================
-# FOOTER
-# =====================================================
-
-st.divider()
-
-st.caption(
-    "Loan Approval Classification • Logistic Regression"
-)
-
-st.caption(
-    "⚠️ Educational demonstration only. "
-    "Not a real banking decision system."
-)    
-       
+        
