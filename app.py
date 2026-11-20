@@ -2,39 +2,70 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Page settings
+
+# --------------------------------------------------
+# PAGE CONFIG
+# --------------------------------------------------
+
 st.set_page_config(
     page_title="Loan Approval Prediction",
     page_icon="🏦",
     layout="wide"
 )
 
-# Load model
+
+# --------------------------------------------------
+# LOAD MODEL
+# --------------------------------------------------
+
 @st.cache_resource
 def load_model():
-    return joblib.load("loan_approval.pkl")
+
+    # Your PPT says the saved model is:
+    # loan_approval_model.pkl
+
+    try:
+        return joblib.load("loan_approval_model.pkl")
+    except:
+        return joblib.load("loan_approval.pkl")
+
 
 try:
     model = load_model()
+
 except Exception as e:
-    st.error("Model file 'loan_approval.pkl' could not be loaded.")
+    st.error("❌ Model file could not be loaded.")
+    st.write("Make sure the .pkl model file is uploaded in GitHub.")
     st.write(e)
     st.stop()
 
 
-# Title
+# --------------------------------------------------
+# TITLE
+# --------------------------------------------------
+
 st.title("🏦 Loan Approval Prediction")
-st.write("Enter applicant details to predict loan approval.")
+
+st.write(
+    "Enter the applicant details below to predict "
+    "whether the loan is likely to be approved or not."
+)
 
 st.divider()
 
+
 # --------------------------------------------------
-# INPUT FEATURES
+# INPUT SECTION
 # --------------------------------------------------
 
-st.subheader("📋 Applicant Details")
+st.subheader("📋 Applicant Information")
 
 col1, col2, col3 = st.columns(3)
+
+
+# --------------------------------------------------
+# COLUMN 1
+# --------------------------------------------------
 
 with col1:
 
@@ -68,6 +99,11 @@ with col1:
         step=1000.0
     )
 
+
+# --------------------------------------------------
+# COLUMN 2
+# --------------------------------------------------
+
 with col2:
 
     person_emp_exp = st.number_input(
@@ -84,30 +120,6 @@ with col2:
             "OWN",
             "MORTGAGE",
             "OTHER"
-        ]
-    )
-
-    person_cred_hist_length = st.number_input(
-        "Credit History Length (Years)",
-        min_value=0,
-        max_value=50,
-        value=5
-    )
-
-    credit_score = st.number_input(
-        "Credit Score",
-        min_value=300,
-        max_value=850,
-        value=650
-    )
-
-with col3:
-
-    previous_loan_defaults_on_file = st.selectbox(
-        "Previous Loan Default",
-        [
-            "No",
-            "Yes"
         ]
     )
 
@@ -130,6 +142,13 @@ with col3:
         ]
     )
 
+
+# --------------------------------------------------
+# COLUMN 3
+# --------------------------------------------------
+
+with col3:
+
     loan_int_rate = st.number_input(
         "Interest Rate (%)",
         min_value=0.0,
@@ -138,22 +157,51 @@ with col3:
         step=0.1
     )
 
-loan_percent_income = st.number_input(
-    "Loan Percent of Income",
-    min_value=0.0,
-    max_value=1.0,
-    value=0.20,
-    step=0.01
+    loan_percent_income = st.number_input(
+        "Loan Percent of Income",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.20,
+        step=0.01
+    )
+
+    credit_score = st.number_input(
+        "Credit Score",
+        min_value=300,
+        max_value=850,
+        value=650
+    )
+
+    person_cred_hist_length = st.number_input(
+        "Credit History Length (Years)",
+        min_value=0,
+        max_value=50,
+        value=5
+    )
+
+
+# --------------------------------------------------
+# PREVIOUS DEFAULT
+# --------------------------------------------------
+
+previous_loan_defaults_on_file = st.selectbox(
+    "Previous Loan Default",
+    ["No", "Yes"]
 )
+
 
 st.divider()
 
 
 # --------------------------------------------------
-# PREDICTION
+# PREDICTION BUTTON
 # --------------------------------------------------
 
-if st.button("🔮 Predict Loan Approval", type="primary"):
+if st.button(
+    "🔮 Predict Loan Approval",
+    type="primary",
+    use_container_width=True
+):
 
     # Create input dataframe
     input_data = pd.DataFrame({
@@ -163,74 +211,132 @@ if st.button("🔮 Predict Loan Approval", type="primary"):
         "person_income": [person_income],
         "person_emp_exp": [person_emp_exp],
         "person_home_ownership": [person_home_ownership],
-        "person_cred_hist_length": [person_cred_hist_length],
-        "credit_score": [credit_score],
-        "previous_loan_defaults_on_file": [
-            previous_loan_defaults_on_file
-        ],
         "loan_amnt": [loan_amnt],
         "loan_intent": [loan_intent],
         "loan_int_rate": [loan_int_rate],
-        "loan_percent_income": [loan_percent_income]
+        "loan_percent_income": [loan_percent_income],
+        "credit_score": [credit_score],
+        "person_cred_hist_length": [
+            person_cred_hist_length
+        ],
+        "previous_loan_defaults_on_file": [
+            previous_loan_defaults_on_file
+        ]
     })
 
-    # Convert categorical variables into dummy variables
-    # Convert categorical variables into dummy variables
-input_data = pd.get_dummies(
-    input_data,
-    drop_first=True
-)
 
-# Make sure the input has the same columns
-# that were used during model training
-try:
-    expected_features = model.feature_names_in_
+    # --------------------------------------------------
+    # PREDICTION
+    # --------------------------------------------------
 
-    input_data = input_data.reindex(
-        columns=expected_features,
-        fill_value=0
-    )
-except:
-    pass
+    try:
 
+        prediction = model.predict(input_data)[0]
 
-# Make prediction
-prediction = model.predict(input_data)[0]
+        # Probability
+        try:
+            probabilities = model.predict_proba(
+                input_data
+            )[0]
 
+            approval_probability = probabilities[1] * 100
+            rejection_probability = probabilities[0] * 100
 
-# Get probability
-try:
-    probability = model.predict_proba(input_data)[0][1]
-except:
-    probability = None
+        except:
+            approval_probability = None
+            rejection_probability = None
 
 
-# Display result
+        # --------------------------------------------------
+        # RESULT
+        # --------------------------------------------------
+
+        st.subheader("📢 Prediction Result")
+
+        if prediction == 1:
+
+            st.success("## ✅ Loan Approved")
+
+            if approval_probability is not None:
+
+                st.metric(
+                    "Approval Probability",
+                    f"{approval_probability:.2f}%"
+                )
+
+        else:
+
+            st.error("## ❌ Loan Not Approved")
+
+            if rejection_probability is not None:
+
+                st.metric(
+                    "Rejection Probability",
+                    f"{rejection_probability:.2f}%"
+                )
+
+
+        # --------------------------------------------------
+        # PROBABILITY
+        # --------------------------------------------------
+
+        if approval_probability is not None:
+
+            st.subheader("📊 Prediction Probability")
+
+            probability_data = pd.DataFrame({
+                "Result": [
+                    "Approved",
+                    "Not Approved"
+                ],
+                "Probability (%)": [
+                    approval_probability,
+                    rejection_probability
+                ]
+            })
+
+            st.bar_chart(
+                probability_data.set_index("Result")
+            )
+
+
+        # --------------------------------------------------
+        # SHOW INPUT
+        # --------------------------------------------------
+
+        st.subheader("📝 Entered Applicant Details")
+
+        st.dataframe(
+            input_data,
+            use_container_width=True,
+            hide_index=True
+        )
+
+
+    except Exception as e:
+
+        st.error("❌ Prediction failed.")
+
+        st.write(
+            "The model and input features may not match."
+        )
+
+        st.write("Error details:", e)
+
+
+# --------------------------------------------------
+# FOOTER
+# --------------------------------------------------
+
 st.divider()
 
-if prediction == 1:
-
-    st.success("## ✅ Loan Approved")
-
-    if probability is not None:
-        st.write(
-            f"Approval Probability: **{probability * 100:.2f}%**"
-        )
-
-else:
-
-    st.error("## ❌ Loan Not Approved")
-
-    if probability is not None:
-        st.write(
-            f"Approval Probability: **{probability * 100:.2f}%**"
-        )
-
-
-# Show entered details
-st.subheader("📋 Applicant Details")
-
-st.dataframe(
-    input_data,
-    use_container_width=True
+st.caption(
+    "Loan Approval Classification | Logistic Regression"
 )
+
+st.caption(
+    "⚠️ This is an educational Machine Learning project "
+    "and not a real banking decision system."
+)
+ 
+
