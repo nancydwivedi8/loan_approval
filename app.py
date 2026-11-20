@@ -402,8 +402,5 @@ st.caption(
 st.caption(
     "⚠️ Educational demonstration only. "
     "Not a real banking decision system."
-)
-```
-
-       
+)    
        
