@@ -1,466 +1,370 @@
+```python
 import streamlit as st
 import pandas as pd
+import numpy as np
 import joblib
+
 
 # =========================================================
 # PAGE CONFIGURATION
 # =========================================================
+
 st.set_page_config(
     page_title="Loan Approval Prediction",
-    page_icon="💰",
+    page_icon="🏦",
     layout="wide"
 )
-
-# =========================================================
-# CUSTOM CSS
-# =========================================================
-st.markdown("""
-<style>
-
-    /* Main background */
-    .stApp {
-        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
-    }
-
-    /* Main container */
-    .block-container {
-        max-width: 1200px;
-        padding-top: 2rem;
-        padding-bottom: 3rem;
-    }
-
-    /* Header */
-    .main-title {
-        font-size: 42px;
-        font-weight: 800;
-        color: #172554;
-        margin-bottom: 5px;
-    }
-
-    .subtitle {
-        font-size: 17px;
-        color: #64748b;
-        margin-bottom: 25px;
-    }
-
-    /* Cards */
-    .card {
-        background: white;
-        padding: 22px;
-        border-radius: 15px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 5px 18px rgba(15, 23, 42, 0.07);
-        margin-bottom: 18px;
-    }
-
-    .card-title {
-        font-size: 20px;
-        font-weight: 700;
-        color: #172554;
-        margin-bottom: 10px;
-    }
-
-    /* Metric cards */
-    .metric-card {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 14px;
-        padding: 18px;
-        text-align: center;
-        box-shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
-    }
-
-    .metric-label {
-        color: #64748b;
-        font-size: 14px;
-    }
-
-    .metric-value {
-        color: #172554;
-        font-size: 27px;
-        font-weight: 800;
-        margin-top: 5px;
-    }
-
-    /* Result */
-    .approved {
-        background: #ecfdf5;
-        border: 1px solid #86efac;
-        border-radius: 15px;
-        padding: 22px;
-        text-align: center;
-    }
-
-    .rejected {
-        background: #fef2f2;
-        border: 1px solid #fca5a5;
-        border-radius: 15px;
-        padding: 22px;
-        text-align: center;
-    }
-
-    .result-title {
-        font-size: 30px;
-        font-weight: 800;
-    }
-
-    .result-subtitle {
-        font-size: 16px;
-        color: #64748b;
-        margin-top: 5px;
-    }
-
-    /* Button */
-    .stButton > button {
-        width: 100%;
-        height: 50px;
-        border-radius: 10px;
-        font-size: 17px;
-        font-weight: 700;
-    }
-
-    /* Footer */
-    .footer {
-        text-align: center;
-        color: #64748b;
-        font-size: 13px;
-        margin-top: 35px;
-        padding-top: 15px;
-        border-top: 1px solid #e2e8f0;
-    }
-
-</style>
-""", unsafe_allow_html=True)
 
 
 # =========================================================
 # LOAD MODEL
 # =========================================================
+
 @st.cache_resource
 def load_model():
+
+    # Your notebook saved the model as loan_approval.pkl
+    # If your GitHub file has another name, change it here.
     return joblib.load("loan_approval.pkl")
 
 
 try:
     model = load_model()
 except Exception as e:
-    st.error("❌ Model could not be loaded.")
-    st.code(str(e))
+    st.error("❌ Model file could not be loaded.")
+    st.error("Make sure 'loan_approval.pkl' is uploaded in the same GitHub repository.")
     st.stop()
 
 
 # =========================================================
-# HEADER
+# TITLE
 # =========================================================
-st.markdown(
-    '<div class="main-title">💰 Loan Approval Prediction</div>',
-    unsafe_allow_html=True
-)
+
+st.title("🏦 Loan Approval Prediction")
 
 st.markdown(
-    '<div class="subtitle">'
-    'Machine Learning powered loan approval prediction using Logistic Regression'
-    '</div>',
-    unsafe_allow_html=True
+    """
+    ### Machine Learning Project
+    **Loan Approval Classification using Logistic Regression**
+
+    Enter the applicant's details below and the model will predict
+    whether the loan is likely to be **Approved** or **Not Approved**.
+    """
 )
 
+st.divider()
+
+
 # =========================================================
-# TOP INFORMATION CARDS
+# INPUT FORM
 # =========================================================
+
+st.subheader("📋 Applicant Information")
+
 col1, col2, col3 = st.columns(3)
 
 with col1:
-    st.markdown("""
-    <div class="metric-card">
-        <div class="metric-label">ML Algorithm</div>
-        <div class="metric-value">Logistic Regression</div>
-    </div>
-    """, unsafe_allow_html=True)
+
+    person_age = st.number_input(
+        "👤 Age",
+        min_value=18,
+        max_value=100,
+        value=25,
+        step=1
+    )
+
+    person_gender = st.selectbox(
+        "⚥ Gender",
+        ["male", "female"]
+    )
+
+    person_education = st.selectbox(
+        "🎓 Education",
+        [
+            "High School",
+            "Associate",
+            "Bachelor",
+            "Master",
+            "Doctorate"
+        ]
+    )
+
+    person_income = st.number_input(
+        "💰 Annual Income",
+        min_value=0.0,
+        value=50000.0,
+        step=1000.0
+    )
+
+    person_emp_exp = st.number_input(
+        "💼 Employment Experience (Years)",
+        min_value=0,
+        max_value=60,
+        value=5,
+        step=1
+    )
+
 
 with col2:
-    st.markdown("""
-    <div class="metric-card">
-        <div class="metric-label">Training Dataset</div>
-        <div class="metric-value">45,000 Records</div>
-    </div>
-    """, unsafe_allow_html=True)
 
-with col3:
-    st.markdown("""
-    <div class="metric-card">
-        <div class="metric-label">Model Accuracy</div>
-        <div class="metric-value">90%</div>
-    </div>
-    """, unsafe_allow_html=True)
+    person_home_ownership = st.selectbox(
+        "🏠 Home Ownership",
+        [
+            "RENT",
+            "OWN",
+            "MORTGAGE",
+            "OTHER"
+        ]
+    )
 
-st.write("")
-
-
-# =========================================================
-# INPUT SECTION
-# =========================================================
-st.markdown("""
-<div class="card">
-<div class="card-title">👤 Applicant Information</div>
-</div>
-""", unsafe_allow_html=True)
-
-left, right = st.columns(2)
-
-with left:
+    person_cred_hist_length = st.number_input(
+        "📅 Credit History Length (Years)",
+        min_value=0,
+        max_value=50,
+        value=5,
+        step=1
+    )
 
     credit_score = st.number_input(
-        "Credit Score",
-        min_value=390,
+        "📊 Credit Score",
+        min_value=300,
         max_value=850,
-        value=720,
-        step=1,
-        help="Applicant's credit score"
+        value=650,
+        step=1
+    )
+
+    previous_loan_defaults_on_file = st.selectbox(
+        "⚠️ Previous Loan Default",
+        [
+            "No",
+            "Yes"
+        ]
+    )
+
+
+with col3:
+
+    loan_amnt = st.number_input(
+        "💵 Loan Amount",
+        min_value=0.0,
+        value=10000.0,
+        step=500.0
+    )
+
+    loan_intent = st.selectbox(
+        "🎯 Loan Intent",
+        [
+            "PERSONAL",
+            "EDUCATION",
+            "MEDICAL",
+            "VENTURE",
+            "HOMEIMPROVEMENT",
+            "DEBTCONSOLIDATION"
+        ]
     )
 
     loan_int_rate = st.number_input(
-        "Loan Interest Rate (%)",
-        min_value=5.42,
-        max_value=20.0,
-        value=11.5,
-        step=0.01,
-        help="Interest rate of the requested loan"
+        "📈 Loan Interest Rate (%)",
+        min_value=0.0,
+        max_value=50.0,
+        value=10.0,
+        step=0.1
     )
-
-
-with right:
 
     loan_percent_income = st.number_input(
-        "Loan Percent Income",
+        "📌 Loan Percent of Income",
         min_value=0.0,
-        max_value=0.66,
-        value=0.15,
-        step=0.01,
-        help="Loan amount as a proportion of applicant income"
-    )
-
-    cb_person_cred_hist_length = st.number_input(
-        "Credit History Length (Years)",
-        min_value=2.0,
-        max_value=30.0,
-        value=4.0,
-        step=0.1,
-        help="Length of credit history in years"
+        max_value=1.0,
+        value=0.20,
+        step=0.01
     )
 
 
-st.write("")
+st.divider()
+
 
 # =========================================================
 # PREDICTION BUTTON
 # =========================================================
-predict_button = st.button(
-    "🔍 Predict Loan Approval"
-)
+
+if st.button("🔮 Predict Loan Approval", type="primary", use_container_width=True):
+
+    # -----------------------------------------------------
+    # Create raw input DataFrame
+    # -----------------------------------------------------
+
+    input_data = pd.DataFrame({
+        "person_age": [person_age],
+        "person_gender": [person_gender],
+        "person_education": [person_education],
+        "person_income": [person_income],
+        "person_emp_exp": [person_emp_exp],
+        "person_home_ownership": [person_home_ownership],
+        "person_cred_hist_length": [person_cred_hist_length],
+        "credit_score": [credit_score],
+        "previous_loan_defaults_on_file": [
+            "Yes" if previous_loan_defaults_on_file == "Yes" else "No"
+        ],
+        "loan_amnt": [loan_amnt],
+        "loan_intent": [loan_intent],
+        "loan_int_rate": [loan_int_rate],
+        "loan_percent_income": [loan_percent_income]
+    })
 
 
-# =========================================================
-# PREDICTION
-# =========================================================
-if predict_button:
+    # -----------------------------------------------------
+    # Convert categorical variables into dummy variables
+    #
+    # This matches your notebook:
+    #
+    # x = pd.get_dummies(x, drop_first=True)
+    # -----------------------------------------------------
+
+    input_encoded = pd.get_dummies(
+        input_data,
+        drop_first=True
+    )
+
+
+    # -----------------------------------------------------
+    # Get the feature names used during model training
+    # -----------------------------------------------------
 
     try:
 
-        # -------------------------------------------------
-        # Create new applicant
-        # Same 4 inputs used in the original notebook
-        # -------------------------------------------------
-        new_applicant = pd.DataFrame({
-            "credit_score": [credit_score],
-            "loan_int_rate": [loan_int_rate],
-            "loan_percent_income": [loan_percent_income],
-            "cb_person_cred_hist_length": [
-                cb_person_cred_hist_length
-            ]
-        })
+        expected_features = model.named_steps[
+            "scaler"
+        ].feature_names_in_
 
-        # -------------------------------------------------
-        # IMPORTANT:
-        # Original model was trained after get_dummies()
-        # and therefore expects 22 features.
-        #
-        # Reindex input using the exact feature names
-        # stored by the trained model.
-        # -------------------------------------------------
-        if hasattr(model, "feature_names_in_"):
+        # Make sure the Streamlit input has exactly
+        # the same columns as training data.
 
-            new_applicant = new_applicant.reindex(
-                columns=model.feature_names_in_,
-                fill_value=0
-            )
+        input_encoded = input_encoded.reindex(
+            columns=expected_features,
+            fill_value=0
+        )
 
-        # -------------------------------------------------
-        # Prediction
-        # -------------------------------------------------
-        prediction = model.predict(new_applicant)[0]
+    except Exception:
 
-        probabilities = model.predict_proba(
-            new_applicant
+        st.warning(
+            "⚠️ Feature names could not be automatically detected. "
+            "Please check the model and training code."
+        )
+
+
+    # -----------------------------------------------------
+    # Prediction
+    # -----------------------------------------------------
+
+    prediction = model.predict(input_encoded)[0]
+
+
+    # -----------------------------------------------------
+    # Prediction Probability
+    # -----------------------------------------------------
+
+    try:
+
+        probability = model.predict_proba(
+            input_encoded
         )[0]
 
-        # Classes are [0, 1]
-        class_0_index = list(model.classes_).index(0)
-        class_1_index = list(model.classes_).index(1)
+        approved_probability = probability[1] * 100
+        rejected_probability = probability[0] * 100
 
-        rejected_probability = (
-            probabilities[class_0_index] * 100
-        )
+    except Exception:
 
-        approved_probability = (
-            probabilities[class_1_index] * 100
-        )
+        approved_probability = None
+        rejected_probability = None
 
-        st.write("")
-        st.markdown("---")
-        st.write("")
 
-        # =================================================
-        # RESULT
-        # =================================================
-        if prediction == 1:
+    # =====================================================
+    # DISPLAY RESULT
+    # =====================================================
 
-            st.markdown("""
-            <div class="approved">
-                <div class="result-title">
-                    ✅ Loan Approved
-                </div>
-                <div class="result-subtitle">
-                    The model predicts that this loan application
-                    is likely to be approved.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    st.divider()
 
-        else:
+    st.subheader("📢 Prediction Result")
 
-            st.markdown("""
-            <div class="rejected">
-                <div class="result-title">
-                    ❌ Loan Rejected
-                </div>
-                <div class="result-subtitle">
-                    The model predicts that this loan application
-                    is likely to be rejected.
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    if prediction == 1:
 
-        st.write("")
+        st.success("### ✅ Loan Approved")
 
-        # =================================================
-        # PROBABILITY METRICS
-        # =================================================
-        p1, p2 = st.columns(2)
+        if approved_probability is not None:
 
-        with p1:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">
-                    Approval Probability
-                </div>
-                <div class="metric-value">
-                    {approved_probability:.2f}%
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric(
+                "Approval Probability",
+                f"{approved_probability:.2f}%"
+            )
 
-        with p2:
-            st.markdown(f"""
-            <div class="metric-card">
-                <div class="metric-label">
-                    Rejection Probability
-                </div>
-                <div class="metric-value">
-                    {rejected_probability:.2f}%
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
+    else:
 
-        st.write("")
+        st.error("### ❌ Loan Not Approved")
 
-        # =================================================
-        # PROBABILITY VISUALIZATION
-        # =================================================
-        st.markdown("""
-        <div class="card">
-        <div class="card-title">
-            📊 Prediction Probability
-        </div>
-        </div>
-        """, unsafe_allow_html=True)
+        if rejected_probability is not None:
 
-        chart_df = pd.DataFrame({
-            "Outcome": [
-                "Loan Rejected",
-                "Loan Approved"
+            st.metric(
+                "Rejection Probability",
+                f"{rejected_probability:.2f}%"
+            )
+
+
+    # -----------------------------------------------------
+    # Show both probabilities
+    # -----------------------------------------------------
+
+    if approved_probability is not None:
+
+        st.subheader("📊 Prediction Probability")
+
+        probability_df = pd.DataFrame({
+            "Result": [
+                "Approved",
+                "Not Approved"
             ],
             "Probability": [
-                rejected_probability,
-                approved_probability
+                approved_probability,
+                rejected_probability
             ]
         })
 
         st.bar_chart(
-            chart_df.set_index("Outcome"),
-            y="Probability"
+            probability_df.set_index("Result")
         )
 
-        st.caption(
-            "Probability represents the model's estimated likelihood "
-            "for each outcome."
-        )
 
-        # =================================================
-        # INPUT SUMMARY
-        # =================================================
-        st.write("")
+    # -----------------------------------------------------
+    # Show input summary
+    # -----------------------------------------------------
 
-        st.markdown("""
-        <div class="card">
-        <div class="card-title">
-            📋 Applicant Input Summary
-        </div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.subheader("📝 Applicant Details")
 
-        summary_col1, summary_col2 = st.columns(2)
-
-        with summary_col1:
-            st.write(
-                f"**Credit Score:** {credit_score}"
-            )
-            st.write(
-                f"**Loan Interest Rate:** "
-                f"{loan_int_rate:.2f}%"
-            )
-
-        with summary_col2:
-            st.write(
-                f"**Loan Percent Income:** "
-                f"{loan_percent_income:.2f}"
-            )
-            st.write(
-                f"**Credit History:** "
-                f"{cb_person_cred_hist_length:.1f} years"
-            )
-
-    except Exception as e:
-
-        st.error("❌ Prediction error")
-        st.code(str(e))
+    st.dataframe(
+        input_data,
+        use_container_width=True,
+        hide_index=True
+    )
 
 
 # =========================================================
 # FOOTER
 # =========================================================
-st.markdown("""
-<div class="footer">
-    Loan Approval Prediction | Logistic Regression |
-    Machine Learning Project
-</div>
-""", unsafe_allow_html=True)
+
+st.divider()
+
+st.caption(
+    "Loan Approval Classification | Logistic Regression | "
+    "Educational Machine Learning Project"
+)
+
+st.caption(
+    "⚠️ This application is for educational demonstration "
+    "and should not be used as a real banking decision system."
+)
+```
+   
+
+
+
+
+
