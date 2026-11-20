@@ -244,64 +244,21 @@ if st.button(
     # -------------------------------------------------
     # PREDICTION
     # -------------------------------------------------
-
-    try:
         # Check the features expected by the trained model
-
-st.write("### 🔍 Model Feature Check")
+        # --------------------------------------------------
+# PREDICTION
+# --------------------------------------------------
 
 try:
-    expected_features = list(model.feature_names_in_)
 
-    st.write("**Model expects these features:**")
-    st.write(expected_features)
+    prediction = model.predict(input_data)[0]
 
-    st.write("**App is sending these features:**")
-    st.write(list(input_data.columns))
-
-    missing_features = [
-        col for col in expected_features
-        if col not in input_data.columns
-    ]
-
-    extra_features = [
-        col for col in input_data.columns
-        if col not in expected_features
-    ]
-
-    if missing_features:
-        st.error(
-            f"Missing features: {missing_features}"
-        )
-
-    if extra_features:
-        st.warning(
-            f"Extra features: {extra_features}"
-        )
-
-    if not missing_features and not extra_features:
-
-        # Put columns in exactly the same order
-        input_data = input_data[
-            expected_features
-        ]
-
-        prediction = model.predict(
-            input_data
-        )[0]
-
-        st.success(
-            f"Prediction completed: {prediction}"
-        )
-
+    if prediction == 1:
+        st.success("## ✅ Loan Approved")
     else:
-        st.error(
-            "Feature names do not match the trained model."
-        )
+        st.error("## ❌ Loan Not Approved")
 
 except Exception as e:
 
-    st.error("Could not check model features.")
+    st.error("❌ Prediction failed.")
     st.write(e)
-
-        
