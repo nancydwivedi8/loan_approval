@@ -2,9 +2,10 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# ==============================
+
+# =====================================================
 # PAGE CONFIG
-# ==============================
+# =====================================================
 
 st.set_page_config(
     page_title="Loan Approval Predictor",
@@ -12,41 +13,52 @@ st.set_page_config(
     layout="centered"
 )
 
-# ==============================
-# CUSTOM STYLE
-# ==============================
+
+# =====================================================
+# CUSTOM CSS
+# =====================================================
 
 st.markdown("""
 <style>
 
 .main {
-    padding-top: 20px;
+    padding-top: 1rem;
 }
 
 .title {
     text-align: center;
-    font-size: 42px;
+    font-size: 40px;
     font-weight: 700;
 }
 
 .subtitle {
     text-align: center;
     color: #9ca3af;
-    margin-bottom: 30px;
+    margin-bottom: 25px;
+}
+
+div.stButton > button {
+    width: 100%;
+    border-radius: 10px;
+    height: 50px;
+    font-size: 17px;
+    font-weight: 600;
 }
 
 </style>
 """, unsafe_allow_html=True)
 
-# ==============================
+
+# =====================================================
 # LOAD MODEL
-# ==============================
+# =====================================================
 
 @st.cache_resource
 def load_model():
 
     try:
         return joblib.load("loan_approval_model.pkl")
+
     except:
         return joblib.load("loan_approval.pkl")
 
@@ -57,19 +69,16 @@ try:
 
 except Exception as e:
 
-    st.error("❌ Model file not found.")
+    st.error("❌ Model file could not be loaded.")
 
-    st.write(
-        "Please check that your .pkl file is uploaded "
-        "in the GitHub repository."
-    )
+    st.write(e)
 
     st.stop()
 
 
-# ==============================
+# =====================================================
 # HEADER
-# ==============================
+# =====================================================
 
 st.markdown(
     '<div class="title">🏦 Loan Approval Predictor</div>',
@@ -78,7 +87,7 @@ st.markdown(
 
 st.markdown(
     '<div class="subtitle">'
-    'Machine Learning based Loan Approval Classification'
+    'Machine Learning Based Loan Approval Classification'
     '</div>',
     unsafe_allow_html=True
 )
@@ -86,9 +95,9 @@ st.markdown(
 st.divider()
 
 
-# ==============================
-# INPUT SECTION
-# ==============================
+# =====================================================
+# INPUTS
+# =====================================================
 
 st.subheader("📋 Applicant Information")
 
@@ -149,26 +158,28 @@ with col2:
 st.divider()
 
 
-# ==============================
-# PREDICTION
-# ==============================
+# =====================================================
+# PREDICTION BUTTON
+# =====================================================
 
 if st.button(
     "🔮 Predict Loan Approval",
-    type="primary",
-    use_container_width=True
+    type="primary"
 ):
 
-    # Calculate loan-to-income ratio
+    # -------------------------------------------------
+    # LOAN TO INCOME RATIO
+    # -------------------------------------------------
+
     if income > 0:
         loan_percent_income = loan_amount / income
     else:
         loan_percent_income = 0
 
 
-    # ==================================================
-    # CREATE ALL 13 FEATURES EXPECTED BY THE MODEL
-    # ==================================================
+    # -------------------------------------------------
+    # CREATE RAW INPUT
+    # -------------------------------------------------
 
     input_data = pd.DataFrame({
 
@@ -194,26 +205,69 @@ if st.button(
             loan_percent_income
         ],
 
+        "cb_person_cred_hist_length": [5],
+
         "credit_score": [credit_score],
 
-        "person_cred_hist_length": [5],
-
-        "previous_loan_defaults_on_file": [
-            previous_default
+        "cb_person_default_on_file": [
+            "Y" if previous_default == "Yes" else "N"
         ]
     })
 
 
-    # ==================================================
-    # PREDICT
-    # ==================================================
+    # =================================================
+    # CONVERT CATEGORICAL FEATURES TO DUMMY VARIABLES
+    # =================================================
+
+    categorical_columns = [
+        "person_gender",
+        "person_education",
+        "person_home_ownership",
+        "loan_intent",
+        "cb_person_default_on_file"
+    ]
+
+
+    input_data = pd.get_dummies(
+        input_data,
+        columns=categorical_columns
+    )
+
+
+    # =================================================
+    # MATCH EXACT TRAINING FEATURES
+    # =================================================
 
     try:
 
-        prediction = model.predict(input_data)[0]
+        expected_features = list(
+            model.feature_names_in_
+        )
+
+        input_data = input_data.reindex(
+            columns=expected_features,
+            fill_value=0
+        )
+
+    except AttributeError:
+
+        pass
 
 
-        # Probability
+    # =================================================
+    # PREDICTION
+    # =================================================
+
+    try:
+
+        prediction = model.predict(
+            input_data
+        )[0]
+
+
+        # ------------------------------------------------
+        # PROBABILITY
+        # ------------------------------------------------
 
         try:
 
@@ -225,19 +279,22 @@ if st.button(
                 probabilities[1] * 100
             )
 
+            rejection_probability = (
+                probabilities[0] * 100
+            )
+
         except:
 
             approval_probability = None
+            rejection_probability = None
 
 
-        st.divider()
+        # =================================================
+        # RESULT
+        # =================================================
 
         st.subheader("📊 Prediction Result")
 
-
-        # ==============================
-        # APPROVED
-        # ==============================
 
         if prediction == 1:
 
@@ -252,28 +309,23 @@ if st.button(
                     f"{approval_probability:.2f}%"
                 )
 
-
-        # ==============================
-        # NOT APPROVED
-        # ==============================
-
         else:
 
             st.error(
                 "## ❌ Loan Not Approved"
             )
 
-            if approval_probability is not None:
+            if rejection_probability is not None:
 
                 st.metric(
-                    "Approval Probability",
-                    f"{approval_probability:.2f}%"
+                    "Rejection Probability",
+                    f"{rejection_probability:.2f}%"
                 )
 
 
-        # ==============================
+        # =================================================
         # APPLICATION SUMMARY
-        # ==============================
+        # =================================================
 
         st.subheader("📝 Application Summary")
 
@@ -298,6 +350,7 @@ if st.button(
             ]
         })
 
+
         st.dataframe(
             summary,
             use_container_width=True,
@@ -311,12 +364,16 @@ if st.button(
             "❌ Prediction failed."
         )
 
+        st.write(
+            "Model and input features could not be matched."
+        )
+
         st.write(e)
 
 
-# ==============================
+# =====================================================
 # FOOTER
-# ==============================
+# =====================================================
 
 st.divider()
 
@@ -325,5 +382,5 @@ st.caption(
 )
 
 st.caption(
-    "Educational ML project – not a real banking decision."
+    "Educational Machine Learning Project"
 )
