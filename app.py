@@ -175,7 +175,62 @@ if st.button("🔮 Predict Loan Approval", type="primary"):
     })
 
     # Convert categorical variables into dummy variables
-    input_data = pd.get_dummies(
-        input_data,
-        drop
+    # Convert categorical variables into dummy variables
+input_data = pd.get_dummies(
+    input_data,
+    drop_first=True
+)
 
+# Make sure the input has the same columns
+# that were used during model training
+try:
+    expected_features = model.feature_names_in_
+
+    input_data = input_data.reindex(
+        columns=expected_features,
+        fill_value=0
+    )
+except:
+    pass
+
+
+# Make prediction
+prediction = model.predict(input_data)[0]
+
+
+# Get probability
+try:
+    probability = model.predict_proba(input_data)[0][1]
+except:
+    probability = None
+
+
+# Display result
+st.divider()
+
+if prediction == 1:
+
+    st.success("## ✅ Loan Approved")
+
+    if probability is not None:
+        st.write(
+            f"Approval Probability: **{probability * 100:.2f}%**"
+        )
+
+else:
+
+    st.error("## ❌ Loan Not Approved")
+
+    if probability is not None:
+        st.write(
+            f"Approval Probability: **{probability * 100:.2f}%**"
+        )
+
+
+# Show entered details
+st.subheader("📋 Applicant Details")
+
+st.dataframe(
+    input_data,
+    use_container_width=True
+)
